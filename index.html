@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fixit Uganda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+      import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
+      import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAJg_pKuwBXnaTrNOQaPrYEl5lQmO1xDEw",
+        authDomain: "fixitug-ed677.firebaseapp.com",
+        projectId: "fixitug-ed677",
+        storageBucket: "fixitug-ed677.firebasestorage.app",
+        messagingSenderId: "670250234599",
+        appId: "1:670250234599:web:0a673ecc2a82cc3cd7a842"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth();
+      const db = getFirestore();
+      const provider = new GoogleAuthProvider();
+
+      window.loginWithGoogle = async function () {
+        try {
+          await signInWithPopup(auth, provider);
+          alert("Login successful");
+        } catch (error) {
+          alert("Login failed: " + error.message);
+        }
+      };
+
+      window.logout = function () {
+        signOut(auth).then(() => alert("Logged out"));
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const adminSection = document.getElementById("admin-section");
+        const loginBtn = document.getElementById("login-btn");
+        const logoutBtn = document.getElementById("logout-btn");
+
+        if (!adminSection || !loginBtn || !logoutBtn) return;
+
+        onAuthStateChanged(auth, user => {
+          adminSection.style.display = user ? "block" : "none";
+          loginBtn.style.display = user ? "none" : "inline-block";
+          logoutBtn.style.display = user ? "inline-block" : "none";
+
+          if (user) {
+            const repairsCol = collection(db, "repairs");
+            onSnapshot(repairsCol, snapshot => {
+              let repairs = [];
+              snapshot.forEach(doc => repairs.push(doc.data()));
+              document.body.__x?.$data.admin.repairs = repairs;
+            });
+
+            const ordersCol = collection(db, "orders");
+            onSnapshot(ordersCol, snapshot => {
+              let orders = [];
+              snapshot.forEach(doc => orders.push(doc.data()));
+              document.body.__x?.$data.admin.orders = orders;
+            });
+          }
+        });
+      });
+
+      window.submitRepairRequest = async function (name, device, issue) {
+        try {
+          await addDoc(collection(db, "repairs"), { name, device, issue, createdAt: new Date() });
+          alert("Repair request submitted!");
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      };
+
+      window.placeOrder = async function (customer, items) {
+        try {
+          await addDoc(collection(db, "orders"), { customer, items, createdAt: new Date() });
+          alert("Order placed!");
+        } catch (e) {
+          alert("Order error: " + e.message);
+        }
+      };
+    </script>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      .fun-animation {
+        animation: bounce 2s infinite;
+      }
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+    </style>
+  </head>
+  <body class="bg-white text-gray-900" x-data="{ cart: [], showCart: false, inbox: [], admin: { orders: [], repairs: [] } }">
+    <header class="flex justify-between items-center p-4 shadow">
+      <img src="/logo.png" alt="Fixit Logo" class="h-12">
+      <div>
+        <button id="login-btn" onclick="loginWithGoogle()" class="bg-green-600 text-white px-4 py-2 rounded">Admin Login</button>
+        <button id="logout-btn" onclick="logout()" class="hidden bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+      </div>
+    </header>
+
+    <section class="text-center py-20 bg-gradient-to-r from-green-200 to-green-500 text-white">
+      <h1 class="text-5xl font-bold mb-4">Fixit Uganda</h1>
+      <p class="text-xl">Your one-stop shop for phones, repairs & accessories</p>
+      <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-model-unselect-gallery-2-202309?wid=5120&hei=2880&fmt=jpeg&qlt=90&.v=1692923777387" alt="iPhone 15s" class="mx-auto mt-8 rounded-xl shadow-xl">
+    </section>
+
+    <section class="py-10 px-6 bg-yellow-100">
+      <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl font-bold mb-4 text-yellow-800">🔥 Deal of the Day 🔥</h2>
+        <div class="border rounded-xl bg-white p-6 shadow text-center">
+          <img src="https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-13-pro-max-1.jpg" alt="iPhone 13 Pro Max" class="mx-auto h-40 mb-4 object-contain">
+          <h3 class="text-xl font-semibold">iPhone 13 Pro Max (Used)</h3>
+          <p class="text-green-700 font-bold">Now UGX 1,700,000 <span class="line-through text-red-500 ml-2">UGX 1,950,000</span></p>
+          <button class="mt-4 bg-green-600 text-white px-4 py-2 rounded" @click="cart.push({ name: 'iPhone 13 Pro Max', price: 1700000 })">Add to Cart</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-10 px-6">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="text-3xl font-bold mb-6">📱 Phones for Sale</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div class="border rounded-xl p-4 shadow">
+            <img src="https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-14-1.jpg" class="h-40 object-contain mx-auto mb-2">
+            <h3 class="font-semibold text-lg">iPhone 14 (New)</h3>
+            <p class="text-green-600 font-bold">UGX 2,800,000</p>
+            <button class="mt-2 bg-green-600 text-white px-4 py-1 rounded" @click="cart.push({ name: 'iPhone 14', price: 2800000 })">Add to Cart</button>
+          </div>
+          <div class="border rounded-xl p-4 shadow">
+            <img src="https://fdn2.gsmarena.com/vv/pics/apple/apple-iphone-xr-2.jpg" class="h-40 object-contain mx-auto mb-2">
+            <h3 class="font-semibold text-lg">iPhone XR (Used)</h3>
+            <p class="text-green-600 font-bold">UGX 1,300,000</p>
+            <button class="mt-2 bg-green-600 text-white px-4 py-1 rounded" @click="cart.push({ name: 'iPhone XR', price: 1300000 })">Add to Cart</button>
+          </div>
+        </div>
+
+        <h2 class="text-3xl font-bold mt-12 mb-6">🎧 Accessories</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div class="border rounded-xl p-4 shadow">
+            <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MTJV3?wid=1000&hei=1000&fmt=jpeg&qlt=90&.v=1692936613946" class="h-40 object-contain mx-auto mb-2">
+            <h3 class="font-semibold text-lg">Apple AirPods Pro</h3>
+            <p class="text-green-600 font-bold">UGX 850,000</p>
+            <button class="mt-2 bg-green-600 text-white px-4 py-1 rounded" @click="cart.push({ name: 'AirPods Pro', price: 850000 })">Add to Cart</button>
+          </div>
+          <div class="border rounded-xl p-4 shadow">
+            <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MME73?wid=1000&hei=1000&fmt=jpeg&qlt=90&.v=1632861342000" class="h-40 object-contain mx-auto mb-2">
+            <h3 class="font-semibold text-lg">Apple Charging Cable</h3>
+            <p class="text-green-600 font-bold">UGX 80,000</p>
+            <button class="mt-2 bg-green-600 text-white px-4 py-1 rounded" @click="cart.push({ name: 'Charging Cable', price: 80000 })">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
